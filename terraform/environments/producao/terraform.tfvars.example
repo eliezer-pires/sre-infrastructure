@@ -1,0 +1,5 @@
+# Copie para terraform.tfvars e preencha. NÃO versionar o arquivo real.
+# (terraform.tfvars está no .gitignore)
+
+# Chave SSH pública do usuário de automação (Ansible)
+ansible_ssh_public_key = "ssh-ed25519 AAAA...EXEMPLO... ansible@intranet"

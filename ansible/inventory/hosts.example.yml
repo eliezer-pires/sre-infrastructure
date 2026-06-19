@@ -1,0 +1,19 @@
+# Inventário de EXEMPLO (sanitizado). Copie para hosts.yml e ajuste.
+# Em produção, usar inventário dinâmico do Proxmox.
+all:
+  children:
+    linux:
+      hosts:
+        prd-fs-01:
+          ansible_host: 10.0.10.5
+        prd-monitor-01:
+          ansible_host: 10.0.10.40
+        prd-gitlab-01:
+          ansible_host: 10.0.10.43
+      vars:
+        ansible_user: ansible
+
+    criticos:
+      hosts:
+        prd-fs-01:
+        prd-monitor-01:

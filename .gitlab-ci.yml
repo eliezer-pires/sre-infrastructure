@@ -1,0 +1,57 @@
+# Pipeline GitLab CI (espelha o ambiente real, onde o GitLab CI é a ferramenta de CI/CD).
+# Valida e planeja mudanças de IaC; o apply é manual/protegido (GitOps light).
+stages:
+  - validate
+  - plan
+  - apply
+
+variables:
+  TF_ROOT: terraform/environments/producao
+
+# ---- Terraform ----
+.terraform_base:
+  image: hashicorp/terraform:1.9
+  before_script:
+    - cd "$TF_ROOT"
+    # Credenciais do backend/Proxmox vêm do Vault/variáveis protegidas do CI
+    - terraform init -input=false
+
+terraform:validate:
+  extends: .terraform_base
+  stage: validate
+  script:
+    - terraform fmt -check -recursive
+    - terraform validate
+
+terraform:plan:
+  extends: .terraform_base
+  stage: plan
+  script:
+    - terraform plan -input=false -out=tfplan
+  artifacts:
+    paths:
+      - "$TF_ROOT/tfplan"
+    expire_in: 1 day
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+
+terraform:apply:
+  extends: .terraform_base
+  stage: apply
+  script:
+    - terraform apply -input=false tfplan
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual          # apply só após aprovação humana
+  environment:
+    name: producao
+
+# ---- Ansible ----
+ansible:lint:
+  image: python:3.12-slim
+  stage: validate
+  before_script:
+    - pip install --quiet ansible ansible-lint
+  script:
+    - ansible-playbook ansible/playbooks/site.yml --syntax-check
+    - ansible-lint ansible/ || true

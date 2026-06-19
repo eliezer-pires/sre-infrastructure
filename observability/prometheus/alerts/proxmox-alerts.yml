@@ -1,0 +1,50 @@
+# Regras de alerta (exemplo) alinhadas aos thresholds de docs/04-slo-sli.md
+groups:
+  - name: proxmox-cluster
+    rules:
+      - alert: ProxmoxNodeDown
+        expr: count(pve_up{type="node"} == 1) < 3
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Nó do cluster Proxmox offline"
+          description: "Menos de 3 nós online. Risco de quórum se outro cair."
+          runbook: "docs/runbooks/runbook-node-offline.md"
+
+      - alert: ProxmoxClusterCPUHigh
+        expr: avg(pve_cpu_usage_ratio) > 0.80
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Uso de CPU do cluster acima de 80%"
+
+      - alert: ProxmoxClusterRAMCritical
+        expr: avg(pve_memory_usage_ratio) > 0.95
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Uso de RAM do cluster acima de 95%"
+
+  - name: backup-pbs
+    rules:
+      - alert: PBSDatastoreUsageHigh
+        expr: pbs_datastore_used_ratio > 0.90
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Datastore do PBS acima de 90%"
+          runbook: "docs/runbooks/runbook-restore-backup.md"
+
+  - name: node-basics
+    rules:
+      - alert: NodeDiskFilling
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) < 0.10
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Disco com menos de 10% livre em {{ $labels.instance }}"

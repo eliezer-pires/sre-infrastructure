@@ -1,0 +1,48 @@
+# Validação de IaC no GitHub (para o repositório de portfólio).
+# Apenas checagens estáticas — não acessa nenhuma infraestrutura real.
+name: IaC Validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  terraform:
+    name: Terraform fmt & validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.0"
+
+      - name: Terraform fmt
+        run: terraform fmt -check -recursive
+        working-directory: terraform
+
+      - name: Terraform validate (módulo vm-linux)
+        run: |
+          terraform init -backend=false
+          terraform validate
+        working-directory: terraform/modules/vm-linux
+
+  ansible:
+    name: Ansible syntax & lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Ansible
+        run: pip install ansible ansible-lint
+
+      - name: Syntax check
+        run: ansible-playbook ansible/playbooks/site.yml --syntax-check -i ansible/inventory/hosts.example.yml
+
+      - name: Lint
+        run: ansible-lint ansible/ || true

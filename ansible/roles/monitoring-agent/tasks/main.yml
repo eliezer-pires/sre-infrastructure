@@ -1,0 +1,55 @@
+---
+# Role: monitoring-agent
+# Instala node_exporter (métricas para Prometheus) e configura envio
+# de logs ao Graylog via rsyslog. Pensado para ambiente air-gapped:
+# o binário vem de um repositório/artefato interno, não da internet.
+
+- name: Criar usuário de sistema para node_exporter
+  ansible.builtin.user:
+    name: node_exporter
+    system: true
+    shell: /usr/sbin/nologin
+    create_home: false
+
+- name: Instalar binário do node_exporter (artefato interno)
+  ansible.builtin.copy:
+    src: "{{ node_exporter_artifact | default('node_exporter') }}"
+    dest: /usr/local/bin/node_exporter
+    mode: "0755"
+    owner: root
+    group: root
+  notify: restart node_exporter
+
+- name: Criar unit systemd do node_exporter
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/node_exporter.service
+    mode: "0644"
+    content: |
+      [Unit]
+      Description=Prometheus Node Exporter
+      After=network.target
+
+      [Service]
+      User=node_exporter
+      ExecStart=/usr/local/bin/node_exporter
+      Restart=on-failure
+
+      [Install]
+      WantedBy=multi-user.target
+  notify: restart node_exporter
+
+- name: Habilitar e iniciar node_exporter
+  ansible.builtin.systemd:
+    name: node_exporter
+    enabled: true
+    state: started
+    daemon_reload: true
+
+- name: Encaminhar logs ao Graylog (rsyslog → GELF/Syslog)
+  ansible.builtin.copy:
+    dest: /etc/rsyslog.d/90-graylog.conf
+    mode: "0644"
+    content: |
+      # Envia todos os logs ao Graylog interno (exemplo)
+      *.* @10.0.10.40:1514;RSYSLOG_SyslogProtocol23Format
+  notify: restart rsyslog

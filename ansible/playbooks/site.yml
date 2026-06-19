@@ -1,0 +1,8 @@
+---
+# Playbook principal — aplica baseline e agente de monitoramento
+- name: Baseline e monitoramento em hosts Linux
+  hosts: linux
+  become: true
+  roles:
+    - common-linux
+    - monitoring-agent

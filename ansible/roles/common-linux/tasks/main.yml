@@ -1,0 +1,43 @@
+---
+# Role: common-linux
+# Baseline de hardening e pacotes essenciais (idempotente).
+
+- name: Garantir pacotes base instalados
+  ansible.builtin.package:
+    name:
+      - chrony       # sincronização de hora (NTP interno)
+      - htop
+      - vim
+      - curl
+      - rsyslog
+    state: present
+
+- name: Configurar timezone
+  community.general.timezone:
+    name: America/Sao_Paulo
+
+- name: Apontar NTP para servidor interno (intranet-first)
+  ansible.builtin.lineinfile:
+    path: /etc/chrony/chrony.conf
+    regexp: '^server '
+    line: 'server 10.0.10.15 iburst'   # svc-ntp (exemplo)
+    state: present
+  notify: restart chrony
+
+- name: Hardening SSH — desabilitar login root e senha
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: present
+  loop:
+    - { regexp: '^#?PermitRootLogin', line: 'PermitRootLogin no' }
+    - { regexp: '^#?PasswordAuthentication', line: 'PasswordAuthentication no' }
+  notify: restart sshd
+
+- name: Garantir firewall (nftables/ufw) habilitado
+  ansible.builtin.service:
+    name: ufw
+    state: started
+    enabled: true
+  ignore_errors: true   # ambientes sem ufw usam nftables gerenciado à parte
