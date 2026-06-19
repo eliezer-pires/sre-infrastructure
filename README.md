@@ -1,6 +1,6 @@
-# SRE Infrastructure — Confiabilidade e IaC em Ambiente On-Premises Crítico
+# SRE Infrastructure — Confiabilidade, IaC e Governança em Infraestrutura de Missão Crítica
 
-> Implementação de práticas de **Site Reliability Engineering (SRE)** e **Infraestrutura como Código (IaC)** em um datacenter on-premises, *air-gapped* (intranet-first) e de missão crítica.
+> Implementação de práticas de **Site Reliability Engineering (SRE)** e **Infraestrutura como Código (IaC)** voltadas à alta disponibilidade, segurança de dados e conformidade regulatória em ambiente de datacenter moderno (on-premises, *air-gapped* ou híbrido).
 
 ![Status](https://img.shields.io/badge/status-em%20implementa%C3%A7%C3%A3o-blue)
 ![IaC](https://img.shields.io/badge/IaC-Terraform%20%7C%20Ansible-7B42BC)
@@ -11,41 +11,39 @@
 
 ---
 
-## 📌 TL;DR
+## 📌 Visão Executiva (TL;DR)
 
-Projeto de engenharia de confiabilidade que transforma uma operação de TI **manual e frágil** em uma plataforma **automatizada, observável e recuperável**, aplicando princípios de SRE em um ambiente sem acesso à internet.
+Este projeto demonstra a transição de um modelo de TI **manual e reativo** para uma engenharia de plataforma **automatizada, auditável e resiliente**. A arquitetura foi desenhada sob os pilares da **economicidade** (redução de custos com licenciamento proprietário utilizando tecnologias open-source robustas) e **segurança da informação (LGPD)**.
 
-| Indicador | Antes | Depois (meta) | Impacto |
+| Indicador | Situação Anterior (Reativa) | Cenário Alvo (Proativo) | Impacto / Benefício Público |
 |---|---|---|---|
-| **MTTR** (recuperação de serviço) | ~24 horas | **~5 minutos** | **↓ ~99%** |
-| Recuperação de desastre | Apenas dados (restore manual de SO) | Serviço + provisionamento automatizado | Continuidade de negócio |
-| Gestão de infraestrutura | Manual, não rastreável | Versionada em Git (IaC) | Auditabilidade total |
-| Observabilidade | Pontual (métricas isoladas) | Logs + métricas + dashboards unificados | Detecção em < 2 min |
-| Gestão de segredos | Credenciais dispersas | Centralizadas no Vault | Redução de superfície de risco |
+| **MTTR (Recuperação de Serviços)** | ~24 horas (espera por intervenção manual) | **~5 minutos** (failover automático + reprovisionamento veloz) | **Continuidade garantida** dos serviços operacionais e administrativos |
+| **Rastreabilidade e Auditoria** | Histórico descentralizado de modificações | Versionamento completo via Git (GitOps) | Conformidade com diretrizes de controle interno e órgãos externos |
+| **Disaster Recovery (DR)** | Dependente de backups manuais e isolados | Proxmox Backup Server (PBS) automatizado | Mitigação total de risco de perda de dados e indisponibilidade prolongada |
+| **Segurança e Segredos** | Credenciais em arquivos planos ou scripts | Centralização e rotação via HashiCorp Vault | Redução severa da superfície de ataque interna e externa |
+| **Eficiência Financeira** | Dependência de licenciamento proprietário | Virtualização hiperconvergente de alta performance | Alinhamento com o princípio constitucional da economicidade |
 
 > ⚠️ **Nota sobre os dados:** este repositório é um estudo de caso de portfólio. Todos os IPs, hostnames, nomes de organização e segredos foram **sanitizados** e substituídos por valores de exemplo. Nenhuma informação confidencial do ambiente real está presente.
 
 ---
 
-## 🎯 O Problema
+## 🎯 O Desafio Técnico e Institucional
 
-A arquitetura original apresentava um risco crítico de continuidade: os **backups eram realizados apenas internamente nos sistemas operacionais**. Isso garante a recuperação dos *dados*, mas não do *serviço*. Não havia nenhum mecanismo para agilizar reprovisionamento e reconfiguração, fazendo com que o **Mean Time To Recovery (MTTR) ficasse em torno de 24 horas**.
+A arquitetura de infraestrutura original apresentava riscos de continuidade que impactavam diretamente a produtividade institucional: os **backups eram realizados apenas internamente nos sistemas operacionais**, sem automação a nível de hypervisor e sem replicação geográfica robusta. Isso criava um cenário em que, diante de um desastre de hardware, o **Mean Time To Recovery (MTTR) médio se estendia por 24 horas** devido à necessidade de reinstalação e configuração manual de sistemas operacionais e dependências.
 
-Em um ambiente de missão crítica, 24 horas de indisponibilidade de serviços essenciais (Active Directory, DNS, DHCP, file server, sistemas de documentos) é inaceitável.
+Em um cenário de missão crítica (serviços internos de rede, arquivos, operacionais de controle, sistemas de gestão), a indisponibilidade prolongada afeta a transparência pública e a produtividade administrativa.
 
-## 💡 A Solução
+## 💡 A Solução Proposta
 
-Aplicar **SRE de ponta a ponta** sobre a infraestrutura, tratando a infraestrutura como código e construindo capacidade real de recuperação automática:
+Aplicação de **práticas modernas de SRE e Infraestrutura como Código (IaC)** para criar uma plataforma robusta e autorrecuperável, estruturada em:
 
-- **Proxmox Backup Server (PBS)** — backups deduplicados, verificados e testados, com restore garantido.
-- **Cluster Proxmox VE de 3 nós + Ceph** — alta disponibilidade (HA) e failover automático de VMs.
-- **Terraform** — provisionamento declarativo das VMs com state versionado e travado.
-- **Ansible** — configuração idempotente de SOs e serviços.
-- **HashiCorp Vault** — gestão centralizada de segredos.
-- **Graylog + Prometheus + Grafana + Zabbix** — observabilidade unificada (logs + métricas + alertas).
-- **GitOps** — toda mudança passa por Git e pipeline de CI.
+*   **Alta Disponibilidade (HA) com Proxmox VE & Ceph:** Clusterização hiperconvergente de 3 nós com storage distribuído, garantindo tolerância a falhas físicas de servidores com migração automática de VMs em segundos.
+*   **Backup Integrado e Deduplicado (Proxmox Backup Server - PBS):** Garantia de integridade de dados e rapidez nos pontos de restauração.
+*   **Provisionamento Declarativo (Terraform) & Configuração Idempotente (Ansible):** Eliminação do "desvio de configuração" (*configuration drift*). O estado ideal da infraestrutura é definido em código, facilitando auditorias e garantindo replicação idêntica em qualquer ambiente.
+*   **Segurança Zero-Trust (HashiCorp Vault):** Isolamento absoluto de chaves e segredos criptográficos.
+*   **Observabilidade Unificada (Graylog + Prometheus + Grafana + Zabbix):** Centralização de logs e métricas para identificação pró-ativa de anomalias, emitindo alertas antes que o usuário final perceba a lentidão ou interrupção.
 
-O resultado é um **MTTR alvo de ~5 minutos**: diante de uma falha, a VM migra automaticamente (HA) ou é reprovisionada a partir do código + restaurada do PBS, sem reconstrução manual.
+O resultado consolidado é a redução drástica do MTTR para **~5 minutos**, permitindo uma TI que suporta com excelência o ritmo administrativo, técnico-operacional e a modernização institucional.
 
 ---
 
